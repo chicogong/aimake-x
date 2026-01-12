@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI导航 - API 测试页面</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { color: #333; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 30px; }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .result.success { border-left-color: #28a745; }
+        .result.error { border-left-color: #dc3545; }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .status-badge.success { background: #d4edda; color: #155724; }
+        .status-badge.error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI导航 - API 测试</h1>
+        <p class="subtitle">测试已部署的 API 端点</p>
+
+        <div class="test-section">
+            <h2>1. 健康检查 <span id="status1"></span></h2>
+            <p style="color: #666; margin-bottom: 15px;">GET /</p>
+            <button onclick="testHealthCheck()">测试健康检查</button>
+            <div id="result1"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. 智能推荐 <span id="status2"></span></h2>
+            <p style="color: #666; margin-bottom: 15px;">POST /api/recommend</p>
+            <input type="text" id="queryInput" placeholder="输入任务描述" value="我想剪辑一个视频">
+            <button onclick="testRecommend()">测试智能推荐</button>
+            <div id="result2"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. 案例列表 <span id="status3"></span></h2>
+            <p style="color: #666; margin-bottom: 15px;">GET /api/cases</p>
+            <button onclick="testCases()">测试案例列表</button>
+            <div id="result3"></div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button onclick="testAll()" style="background: #28a745; padding: 15px 40px; font-size: 16px;">
+                🚀 测试所有端点
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8787';  // 本地测试
+
+        function showResult(resultId, statusId, data, isError = false) {
+            const resultDiv = document.getElementById(resultId);
+            const statusSpan = document.getElementById(statusId);
+
+            resultDiv.textContent = JSON.stringify(data, null, 2);
+            resultDiv.className = isError ? 'result error' : 'result success';
+
+            const badge = document.createElement('span');
+            badge.className = isError ? 'status-badge error' : 'status-badge success';
+            badge.textContent = isError ? '❌ 失败' : '✅ 成功';
+            statusSpan.textContent = '';
+            statusSpan.appendChild(badge);
+        }
+
+        async function testHealthCheck() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                showResult('result1', 'status1', { status: response.status, data });
+            } catch (error) {
+                showResult('result1', 'status1', { error: error.message }, true);
+            }
+        }
+
+        async function testRecommend() {
+            const query = document.getElementById('queryInput').value;
+            try {
+                const response = await fetch(`${API_BASE}/api/recommend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                const data = await response.json();
+                showResult('result2', 'status2', { status: response.status, data });
+            } catch (error) {
+                showResult('result2', 'status2', { error: error.message }, true);
+            }
+        }
+
+        async function testCases() {
+            try {
+                const response = await fetch(`${API_BASE}/api/cases`);
+                const data = await response.json();
+                showResult('result3', 'status3', { status: response.status, data });
+            } catch (error) {
+                showResult('result3', 'status3', { error: error.message }, true);
+            }
+        }
+
+        async function testAll() {
+            await testHealthCheck();
+            await new Promise(r => setTimeout(r, 500));
+            await testRecommend();
+            await new Promise(r => setTimeout(r, 500));
+            await testCases();
+        }
+    </script>
+</body>
+</html>
