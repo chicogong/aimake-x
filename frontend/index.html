@@ -690,10 +690,10 @@
     </footer>
 
     <script>
-        // 自动检测 API 地址：本地开发用 localhost，生产环境用 Cloudflare Workers
+        // 自动检测 API 地址：本地开发用 localhost，生产环境用自定义域名
         const API_BASE = window.location.hostname === 'localhost' || window.location.protocol === 'file:'
-            ? 'http://localhost:8787'
-            : 'https://ai-nav-api.ghr7719.workers.dev';
+            ? 'http://localhost:8788'
+            : 'https://x.aimake.cc';
         const caseIcons = { 'gov-doc': '📄', 'invoice': '🧾', 'video': '🎬', 'meeting': '🎙️', 'contract': '📋' };
 
         function createProductCard(product) {
