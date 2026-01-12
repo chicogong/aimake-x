@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { HTML_CONTENT } from './frontend.js';
-import { generateWorkflowWithWebSearch, shouldEnableWebSearch } from './webSearch.js';
 
 const app = new Hono();
 
@@ -304,31 +303,11 @@ ${JSON.stringify(PRODUCTS, null, 2)}
 function getSimpleRecommendation(analysis) {
   const keywords = analysis.keywords || [analysis.taskType];
   const recommendations = [];
-  const matchedKeys = [];
 
-  // 尝试匹配产品库中的关键词
   for (const keyword of keywords) {
-    // 1. 精确匹配
     if (PRODUCTS[keyword]) {
-      matchedKeys.push(keyword);
       recommendations.push(...PRODUCTS[keyword].slice(0, 3));
-      continue;
     }
-
-    // 2. 模糊匹配（关键词包含产品库中的key）
-    for (const [productKey, products] of Object.entries(PRODUCTS)) {
-      if (keyword.includes(productKey) || productKey.includes(keyword)) {
-        matchedKeys.push(productKey);
-        recommendations.push(...products.slice(0, 3));
-        break;
-      }
-    }
-  }
-
-  // 3. 如果还是没匹配到，使用 taskType
-  if (recommendations.length === 0 && PRODUCTS[analysis.taskType]) {
-    matchedKeys.push(analysis.taskType);
-    recommendations.push(...PRODUCTS[analysis.taskType].slice(0, 3));
   }
 
   // 去重
@@ -336,25 +315,10 @@ function getSimpleRecommendation(analysis) {
     new Map(recommendations.map(item => [item.name, item])).values()
   ).slice(0, 3);
 
-  // 如果仍然为空，返回默认推荐
-  if (unique.length === 0) {
-    return {
-      query: analysis.taskType,
-      complexity: 'simple',
-      matchedKeywords: [],
-      recommendations: [
-        { name: '豆包', url: 'https://doubao.com', desc: '免费的日常对话、文案生成' },
-        { name: 'Kimi', url: 'https://kimi.moonshot.cn', desc: '长文本处理、文档分析' },
-        { name: 'ChatGPT', url: 'https://chat.openai.com', desc: '强大的对话和创作能力' }
-      ],
-      message: '为您推荐通用AI工具'
-    };
-  }
-
   return {
     query: analysis.taskType,
     complexity: 'simple',
-    matchedKeywords: matchedKeys,
+    matchedKeywords: keywords,
     recommendations: unique,
     message: '为您推荐以下工具'
   };
@@ -396,25 +360,10 @@ app.post('/api/recommend', async (c) => {
     const workflow = await generateWorkflow(query, analysis, c.env);
     console.log('[阶段2] 工作流生成成功');
 
-    // 阶段3：联网搜索（可选）
-    let webSearchData = null;
-    if (shouldEnableWebSearch(query, analysis) && c.env.ZHIPU_API_KEY) {
-      try {
-        console.log('[阶段3] 尝试联网搜索...');
-        webSearchData = await generateWorkflowWithWebSearch(query, analysis, c.env);
-        if (webSearchData) {
-          console.log('[阶段3] 联网搜索成功，找到', webSearchData.tools.length, '个工具');
-        }
-      } catch (error) {
-        console.error('[阶段3] 联网搜索失败（不影响主流程）:', error);
-      }
-    }
-
     return c.json({
       ...workflow,
       mode: 'workflow',
       analysis,
-      webSearch: webSearchData,  // 可能为null
       timestamp: Date.now()
     });
 
