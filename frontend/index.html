@@ -693,7 +693,7 @@
         // 自动检测 API 地址：本地开发用 localhost，生产环境用 Cloudflare Workers
         const API_BASE = window.location.hostname === 'localhost' || window.location.protocol === 'file:'
             ? 'http://localhost:8787'
-            : '';  // 生产环境需配置实际的 Worker URL
+            : 'https://ai-nav-api.ghr7719.workers.dev';
         const caseIcons = { 'gov-doc': '📄', 'invoice': '🧾', 'video': '🎬', 'meeting': '🎙️', 'contract': '📋' };
 
         function createProductCard(product) {
