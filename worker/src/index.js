@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { HTML_CONTENT } from './frontend.js';
 
 const app = new Hono();
 
@@ -92,11 +93,7 @@ async function callAI(prompt, env) {
 
 // 健康检查
 app.get('/', (c) => {
-  return c.json({
-    status: 'ok',
-    message: 'AI导航 - API 服务运行中',
-    version: '1.0.0'
-  });
+  return c.html(HTML_CONTENT);
 });
 
 // 智能推荐 API
