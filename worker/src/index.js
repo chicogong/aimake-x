@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { HTML_CONTENT } from './frontend.js';
 import { generateWorkflowWithWebSearch, shouldEnableWebSearch } from './webSearch.js';
+import { matchScenario, getAllScenarios } from './scenarioTemplates.js';
 
 const app = new Hono();
 
@@ -393,8 +394,24 @@ app.post('/api/recommend', async (c) => {
 
     // 中等/复杂任务：生成工作流
     console.log('[阶段2] 生成工作流...');
-    const workflow = await generateWorkflow(query, analysis, c.env);
-    console.log('[阶段2] 工作流生成成功');
+
+    // 优先尝试匹配场景模板
+    const matchedScenario = matchScenario(analysis.keywords);
+    let workflow;
+
+    if (matchedScenario && matchedScenario.matchScore >= 0.5) {
+      console.log(`[阶段2] 使用场景模板: ${matchedScenario.task} (匹配度: ${(matchedScenario.matchScore * 100).toFixed(0)}%)`);
+      workflow = {
+        ...matchedScenario,
+        source: 'template'  // 标记来源
+      };
+    } else {
+      console.log('[阶段2] 使用AI生成工作流...');
+      workflow = await generateWorkflow(query, analysis, c.env);
+      workflow.source = 'ai';  // 标记来源
+    }
+
+    console.log('[阶段2] 工作流准备完成');
 
     // 阶段3：联网搜索（可选）
     let webSearchData = null;
@@ -435,6 +452,16 @@ app.post('/api/recommend', async (c) => {
       timestamp: Date.now()
     });
   }
+});
+
+// 场景模板列表（新增）
+app.get('/api/scenarios', (c) => {
+  const scenarios = getAllScenarios();
+  return c.json({
+    scenarios,
+    total: scenarios.length,
+    message: '所有预设场景模板'
+  });
 });
 
 // 案例列表
