@@ -13,16 +13,16 @@ AI导航是一个 **AI 产品推荐与导航平台**，帮助用户快速找到�
 
 ## 在线体验
 
-部署后的 API 地址格式为：`https://<worker-name>.<account>.workers.dev`
+🌐 **在线地址：** https://x.aimake.cc
 
 ```bash
 # 智能推荐
-curl -X POST https://your-worker.workers.dev/api/recommend \
+curl -X POST https://x.aimake.cc/api/recommend \
   -H "Content-Type: application/json" \
   -d '{"query": "我想剪辑一个视频并添加字幕"}'
 
 # 查看案例
-curl https://your-worker.workers.dev/api/cases
+curl https://x.aimake.cc/api/cases
 ```
 
 ## 技术架构
@@ -37,40 +37,39 @@ curl https://your-worker.workers.dev/api/cases
 
 ```
 aimake-x/
-├── frontend/                # 前端代码
-│   └── index.html           # 主页面
-├── worker/                  # 后端代码
-│   ├── src/index.js         # API 实现
+├── frontend/                # 前端源代码
+│   └── index.html           # 主页面（开发版本）
+├── worker/                  # Cloudflare Worker
+│   ├── src/
+│   │   ├── index.js         # API 实现 + 前端服务
+│   │   └── frontend.js      # 前端 HTML（生产版本）
 │   ├── wrangler.toml        # Cloudflare 配置
-│   └── .dev.vars            # 本地开发环境变量
-├── docs/                    # 文档
-│   ├── images/              # 截图
-│   └── archive/             # 归档文档
+│   └── .dev.vars            # 本地开发环境变量（不提交）
 ├── tests/                   # 测试文件
 ├── README.md                # 项目说明
 ├── DEPLOYMENT.md            # 部署说明
-└── QUICKSTART.md            # 快速开始
+└── CLAUDE.md                # 开发指南
 ```
 
 ## 快速开始
 
-### 1. 启动后端
+### 本地开发
 
 ```bash
+# 1. 安装依赖
 cd worker
 npm install
+
+# 2. 配置环境变量（创建 .dev.vars 文件）
+echo "SILICONFLOW_API_KEY=your_api_key" > .dev.vars
+
+# 3. 启动开发服务器
 npx wrangler dev --port 8787
+
+# 4. 访问 http://localhost:8787
 ```
 
-### 2. 启动前端
-
-```bash
-cd frontend
-python3 -m http.server 3000
-# 访问 http://localhost:3000
-```
-
-### 3. 测试 API
+### 测试 API
 
 ```bash
 # 视频剪辑推荐
