@@ -71,6 +71,9 @@
 
     <!-- Mermaid.js for flowcharts -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
         :root {
             --primary: #0066FF;
@@ -343,6 +346,13 @@
             background: rgba(0, 102, 255, 0.1);
             border-color: var(--primary);
             color: var(--text-primary);
+        }
+
+        .turnstile-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 16px;
+            min-height: 65px;
         }
 
         .results-section {
@@ -909,6 +919,13 @@
                     <span class="quick-tag" data-query="处理Excel表格">Excel处理</span>
                     <span class="quick-tag" data-query="AI绘画生成图片">AI绘画</span>
                 </div>
+                <!-- Turnstile Widget -->
+                <div class="turnstile-container">
+                    <div class="cf-turnstile"
+                         data-sitekey="0x4AAAAAACMJv6G1wSzglPJJ"
+                         data-callback="onTurnstileSuccess"
+                         data-theme="dark"></div>
+                </div>
             </div>
         </div>
     </section>
@@ -969,6 +986,14 @@
             ? 'http://localhost:8788'
             : 'https://x.aimake.cc';
         const caseIcons = { 'gov-doc': '📄', 'invoice': '🧾', 'video': '🎬', 'meeting': '🎙️', 'contract': '📋' };
+
+        // Turnstile token 管理
+        let turnstileToken = null;
+
+        function onTurnstileSuccess(token) {
+            turnstileToken = token;
+            console.log('Turnstile 验证成功');
+        }
 
         function createProductCard(product) {
             const card = document.createElement('div');
@@ -1379,19 +1404,42 @@
         async function search() {
             const query = document.getElementById('searchInput').value.trim();
             if (!query) return;
+
+            // 检查 Turnstile token
+            if (!turnstileToken) {
+                alert('请完成人机验证后再试');
+                return;
+            }
+
             document.getElementById('loading').classList.add('active');
             document.getElementById('resultsSection').classList.remove('active');
             try {
                 const response = await fetch(API_BASE + '/api/recommend', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CF-Turnstile-Token': turnstileToken
+                    },
                     body: JSON.stringify({ query })
                 });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '请求失败');
+                }
+
                 const data = await response.json();
                 renderResults(data);
+
+                // 重置 Turnstile (每次请求后需要重新验证)
+                turnstileToken = null;
+                turnstile.reset();
             } catch (error) {
                 console.error('Error:', error);
-                alert('请求失败，请确保后端服务已启动');
+                alert(error.message || '请求失败，请稍后重试');
+                // 重置 Turnstile
+                turnstileToken = null;
+                turnstile.reset();
             } finally {
                 document.getElementById('loading').classList.remove('active');
             }

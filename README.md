@@ -145,6 +145,15 @@ curl -X POST http://localhost:8787/api/recommend \
 
 参考 [DEPLOYMENT.md](DEPLOYMENT.md) 了解如何部署到 Cloudflare Workers。
 
+### 人机验证（可选）
+
+为防止 API 滥用，项目集成了 Cloudflare Turnstile 人机验证。详细设置步骤请参考 [TURNSTILE_SETUP.md](TURNSTILE_SETUP.md)。
+
+**特点：**
+- 完全免费，无使用限制
+- 用户体验好，大多数情况下无感知
+- 有效防止爬虫和恶意请求
+
 ## 成本估算
 
 - **启动成本**：约 100 元（域名 + API 测试）

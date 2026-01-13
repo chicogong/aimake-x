@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turnstile 测试页面</title>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0A0E17;
+            color: #F9FAFB;
+        }
+        .container {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 16px;
+            padding: 32px;
+        }
+        h1 { margin-bottom: 20px; }
+        .turnstile-container {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #0066FF 0%, #00D9FF 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 12px;
+            display: none;
+        }
+        .error {
+            background: rgba(239, 68, 68, 0.1) !important;
+            color: #EF4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 Turnstile 测试</h1>
+        <p>这是一个测试页面，演示 Cloudflare Turnstile 的工作流程。</p>
+
+        <div class="turnstile-container">
+            <div class="cf-turnstile"
+                 data-sitekey="1x00000000000000000000AA"
+                 data-callback="onTurnstileSuccess"
+                 data-theme="dark"></div>
+        </div>
+
+        <button id="testBtn" disabled onclick="testAPI()">提交测试请求</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let turnstileToken = null;
+
+        function onTurnstileSuccess(token) {
+            turnstileToken = token;
+            document.getElementById('testBtn').disabled = false;
+            console.log('Turnstile 验证成功，token:', token.substring(0, 20) + '...');
+        }
+
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            const btn = document.getElementById('testBtn');
+
+            btn.disabled = true;
+            resultDiv.style.display = 'block';
+            resultDiv.className = '';
+            resultDiv.textContent = '正在测试...';
+
+            try {
+                const response = await fetch('http://localhost:8788/api/recommend', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CF-Turnstile-Token': turnstileToken
+                    },
+                    body: JSON.stringify({ query: '测试人机验证' })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.textContent = `✅ 成功！返回模式: ${data.mode}`;
+
+                    // 重置 Turnstile
+                    turnstileToken = null;
+                    turnstile.reset();
+                } else {
+                    resultDiv.className = 'error';
+                    resultDiv.textContent = `❌ 失败: ${data.error}`;
+
+                    // 重置 Turnstile
+                    turnstileToken = null;
+                    turnstile.reset();
+                }
+            } catch (error) {
+                resultDiv.className = 'error';
+                resultDiv.textContent = `❌ 请求错误: ${error.message}`;
+
+                // 重置 Turnstile
+                turnstileToken = null;
+                turnstile.reset();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,12 +1,33 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { HTML_CONTENT } from './frontend.js';
+import HTML_CONTENT from './frontend.html';
 import { generateWorkflowWithWebSearch, shouldEnableWebSearch } from './webSearch.js';
 import { matchScenario, getAllScenarios } from './scenarioTemplates.js';
 
 const app = new Hono();
 
 app.use('/*', cors());
+
+// Turnstile 验证函数
+async function verifyTurnstile(token, secret, ip) {
+  try {
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        secret: secret,
+        response: token,
+        remoteip: ip
+      })
+    });
+
+    const data = await response.json();
+    return data.success;
+  } catch (error) {
+    console.error('Turnstile 验证失败:', error);
+    return false;
+  }
+}
 
 // 产品库（核心推荐）
 const PRODUCTS = {
@@ -369,6 +390,24 @@ app.get('/', (c) => {
 // 智能推荐 API（V2 - 三模型架构）
 app.post('/api/recommend', async (c) => {
   try {
+    // Turnstile 验证
+    const turnstileToken = c.req.header('CF-Turnstile-Token');
+    const turnstileSecret = c.env.TURNSTILE_SECRET_KEY;
+
+    // 只在生产环境且配置了密钥时启用验证
+    if (c.env.ENVIRONMENT === 'production' && turnstileSecret) {
+      if (!turnstileToken) {
+        return c.json({ error: '缺少人机验证' }, 403);
+      }
+
+      const clientIP = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
+      const isValid = await verifyTurnstile(turnstileToken, turnstileSecret, clientIP);
+
+      if (!isValid) {
+        return c.json({ error: '人机验证失败，请刷新页面重试' }, 403);
+      }
+    }
+
     const { query } = await c.req.json();
 
     if (!query || query.trim().length === 0) {

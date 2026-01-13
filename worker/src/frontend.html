@@ -1,5 +1,3 @@
-// 前端 HTML 内容
-export const HTML_CONTENT = `
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -70,6 +68,12 @@ export const HTML_CONTENT = `
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Mermaid.js for flowcharts -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
         :root {
             --primary: #0066FF;
@@ -344,6 +348,13 @@ export const HTML_CONTENT = `
             color: var(--text-primary);
         }
 
+        .turnstile-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 16px;
+            min-height: 65px;
+        }
+
         .results-section {
             padding: 40px 0 80px;
             display: none;
@@ -596,6 +607,261 @@ export const HTML_CONTENT = `
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* 工作流样式 */
+        .workflow-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .workflow-header {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .workflow-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .workflow-meta {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .meta-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 102, 255, 0.1);
+            border: 1px solid rgba(0, 102, 255, 0.3);
+            border-radius: 100px;
+            font-size: 14px;
+        }
+
+        .flowchart-container {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 24px;
+            overflow-x: auto;
+        }
+
+        .workflow-steps {
+            margin-top: 32px;
+        }
+
+        .step-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .step-card:hover {
+            border-color: var(--primary);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .step-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .step-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .expand-icon {
+            transition: transform 0.3s;
+        }
+
+        .step-card.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .step-content {
+            display: none;
+            padding: 0 24px 24px;
+        }
+
+        .step-card.expanded .step-content {
+            display: block;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        .step-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .tools-section, .prompt-section, .tips-section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+
+        .tool-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .tool-item:hover {
+            background: rgba(0, 102, 255, 0.1);
+            transform: translateX(4px);
+        }
+
+        .tool-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--gradient-1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .tool-info {
+            flex: 1;
+        }
+
+        .tool-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .tool-reason {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .prompt-box {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .prompt-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .prompt-text {
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            padding: 6px 12px;
+            background: rgba(0, 102, 255, 0.2);
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            color: var(--primary-light);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .copy-btn.copied {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .tip-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 12px;
+            background: rgba(16, 185, 129, 0.05);
+            border-left: 3px solid var(--success);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .tip-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .source-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--warning);
+        }
+
         @media (max-width: 768px) {
             .navbar-content { flex-direction: column; gap: 16px; }
             .nav-links { gap: 16px; }
@@ -603,6 +869,9 @@ export const HTML_CONTENT = `
             .search-box { flex-direction: column; }
             .search-btn { width: 100%; justify-content: center; }
             .results-grid, .cases-grid { grid-template-columns: 1fr; }
+            .workflow-header { padding: 24px 20px; }
+            .step-header { padding: 16px; }
+            .step-content { padding: 0 16px 16px; }
         }
     </style>
 </head>
@@ -650,6 +919,13 @@ export const HTML_CONTENT = `
                     <span class="quick-tag" data-query="处理Excel表格">Excel处理</span>
                     <span class="quick-tag" data-query="AI绘画生成图片">AI绘画</span>
                 </div>
+                <!-- Turnstile Widget -->
+                <div class="turnstile-container">
+                    <div class="cf-turnstile"
+                         data-sitekey="0x4AAAAAACMJv6G1wSzglPJJ"
+                         data-callback="onTurnstileSuccess"
+                         data-theme="dark"></div>
+                </div>
             </div>
         </div>
     </section>
@@ -691,11 +967,33 @@ export const HTML_CONTENT = `
     </footer>
 
     <script>
+        // 初始化 Mermaid
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#0066FF',
+                primaryTextColor: '#F9FAFB',
+                primaryBorderColor: '#0066FF',
+                lineColor: '#3385FF',
+                secondaryColor: '#00D9FF',
+                tertiaryColor: '#111827'
+            }
+        });
+
         // 自动检测 API 地址：本地开发用 localhost，生产环境用自定义域名
         const API_BASE = window.location.hostname === 'localhost' || window.location.protocol === 'file:'
             ? 'http://localhost:8788'
             : 'https://x.aimake.cc';
         const caseIcons = { 'gov-doc': '📄', 'invoice': '🧾', 'video': '🎬', 'meeting': '🎙️', 'contract': '📋' };
+
+        // Turnstile token 管理
+        let turnstileToken = null;
+
+        function onTurnstileSuccess(token) {
+            turnstileToken = token;
+            console.log('Turnstile 验证成功');
+        }
 
         function createProductCard(product) {
             const card = document.createElement('div');
@@ -784,13 +1082,317 @@ export const HTML_CONTENT = `
             return card;
         }
 
-        function renderResults(data) {
+        // 创建 SVG 元素 (安全方式)
+        function createSVG(pathData, size = 20) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', size);
+            svg.setAttribute('height', size);
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.setAttribute('fill', 'none');
+            svg.setAttribute('stroke', 'currentColor');
+            svg.setAttribute('stroke-width', '2');
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData);
+            svg.appendChild(path);
+
+            return svg;
+        }
+
+        // 创建工作流步骤卡片
+        function createStepCard(step) {
+            const card = document.createElement('div');
+            card.className = 'step-card';
+
+            // 步骤头部
+            const header = document.createElement('div');
+            header.className = 'step-header';
+
+            const headerLeft = document.createElement('div');
+            headerLeft.className = 'step-header-left';
+
+            const number = document.createElement('div');
+            number.className = 'step-number';
+            number.textContent = step.step;
+
+            const title = document.createElement('div');
+            title.className = 'step-title';
+            title.textContent = step.name;
+
+            headerLeft.appendChild(number);
+            headerLeft.appendChild(title);
+
+            const icon = document.createElement('div');
+            icon.className = 'expand-icon';
+            icon.appendChild(createSVG('M6 9l6 6 6-6'));
+
+            header.appendChild(headerLeft);
+            header.appendChild(icon);
+
+            // 步骤内容
+            const content = document.createElement('div');
+            content.className = 'step-content';
+
+            // 描述
+            if (step.description) {
+                const desc = document.createElement('p');
+                desc.className = 'step-description';
+                desc.textContent = step.description;
+                content.appendChild(desc);
+            }
+
+            // 工具推荐
+            if (step.tools && step.tools.length > 0) {
+                const toolsSection = document.createElement('div');
+                toolsSection.className = 'tools-section';
+
+                const toolsTitle = document.createElement('div');
+                toolsTitle.className = 'section-title';
+                toolsTitle.textContent = '🔧 推荐工具';
+                toolsSection.appendChild(toolsTitle);
+
+                step.tools.forEach(tool => {
+                    const toolItem = document.createElement('div');
+                    toolItem.className = 'tool-item';
+                    toolItem.onclick = () => window.open(tool.url, '_blank');
+
+                    const toolIcon = document.createElement('div');
+                    toolIcon.className = 'tool-icon';
+                    toolIcon.textContent = tool.name.charAt(0).toUpperCase();
+
+                    const toolInfo = document.createElement('div');
+                    toolInfo.className = 'tool-info';
+
+                    const toolName = document.createElement('div');
+                    toolName.className = 'tool-name';
+                    toolName.textContent = tool.name;
+
+                    const toolReason = document.createElement('div');
+                    toolReason.className = 'tool-reason';
+                    toolReason.textContent = tool.reason;
+
+                    toolInfo.appendChild(toolName);
+                    toolInfo.appendChild(toolReason);
+                    toolItem.appendChild(toolIcon);
+                    toolItem.appendChild(toolInfo);
+                    toolsSection.appendChild(toolItem);
+                });
+
+                content.appendChild(toolsSection);
+            }
+
+            // Prompt模板
+            if (step.prompt) {
+                const promptSection = document.createElement('div');
+                promptSection.className = 'prompt-section';
+
+                const promptTitle = document.createElement('div');
+                promptTitle.className = 'section-title';
+                promptTitle.textContent = '💡 Prompt 模板';
+                promptSection.appendChild(promptTitle);
+
+                // 模板
+                const templateBox = document.createElement('div');
+                templateBox.className = 'prompt-box';
+
+                const templateLabel = document.createElement('div');
+                templateLabel.className = 'prompt-label';
+                templateLabel.textContent = '模板';
+
+                const templateText = document.createElement('div');
+                templateText.className = 'prompt-text';
+                templateText.textContent = step.prompt.template;
+
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.textContent = '复制';
+                copyBtn.onclick = () => copyToClipboard(step.prompt.template, copyBtn);
+
+                templateBox.appendChild(templateLabel);
+                templateBox.appendChild(templateText);
+                templateBox.appendChild(copyBtn);
+                promptSection.appendChild(templateBox);
+
+                // 示例
+                if (step.prompt.example) {
+                    const exampleBox = document.createElement('div');
+                    exampleBox.className = 'prompt-box';
+
+                    const exampleLabel = document.createElement('div');
+                    exampleLabel.className = 'prompt-label';
+                    exampleLabel.textContent = '示例';
+
+                    const exampleText = document.createElement('div');
+                    exampleText.className = 'prompt-text';
+                    exampleText.textContent = step.prompt.example;
+
+                    const copyBtn2 = document.createElement('button');
+                    copyBtn2.className = 'copy-btn';
+                    copyBtn2.textContent = '复制';
+                    copyBtn2.onclick = () => copyToClipboard(step.prompt.example, copyBtn2);
+
+                    exampleBox.appendChild(exampleLabel);
+                    exampleBox.appendChild(exampleText);
+                    exampleBox.appendChild(copyBtn2);
+                    promptSection.appendChild(exampleBox);
+                }
+
+                content.appendChild(promptSection);
+            }
+
+            // 操作提示
+            if (step.tips && step.tips.length > 0) {
+                const tipsSection = document.createElement('div');
+                tipsSection.className = 'tips-section';
+
+                const tipsTitle = document.createElement('div');
+                tipsTitle.className = 'section-title';
+                tipsTitle.textContent = '💭 操作提示';
+                tipsSection.appendChild(tipsTitle);
+
+                step.tips.forEach(tip => {
+                    const tipItem = document.createElement('div');
+                    tipItem.className = 'tip-item';
+
+                    const tipText = document.createElement('div');
+                    tipText.className = 'tip-text';
+                    tipText.textContent = tip;
+
+                    tipItem.appendChild(tipText);
+                    tipsSection.appendChild(tipItem);
+                });
+
+                content.appendChild(tipsSection);
+            }
+
+            card.appendChild(header);
+            card.appendChild(content);
+
+            // 点击展开/收起
+            header.onclick = () => card.classList.toggle('expanded');
+
+            return card;
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.textContent;
+                button.textContent = '已复制';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+                alert('复制失败，请手动复制');
+            });
+        }
+
+        // 渲染工作流
+        async function renderWorkflow(data) {
             const grid = document.getElementById('resultsGrid');
             grid.replaceChildren();
-            data.recommendations.forEach(p => grid.appendChild(createProductCard(p)));
-            document.getElementById('resultsQuery').textContent = '根据「' + data.query + '」为你推荐';
+
+            const container = document.createElement('div');
+            container.className = 'workflow-container';
+
+            // 工作流头部
+            const header = document.createElement('div');
+            header.className = 'workflow-header';
+
+            const title = document.createElement('h2');
+            title.className = 'workflow-title';
+            title.textContent = data.task || '工作流程';
+
+            // 元信息
+            const meta = document.createElement('div');
+            meta.className = 'workflow-meta';
+
+            if (data.complexity) {
+                const complexityMap = {
+                    'simple': '简单',
+                    'moderate': '中等',
+                    'complex': '复杂'
+                };
+                const badge1 = document.createElement('span');
+                badge1.className = 'meta-badge';
+                badge1.textContent = `📊 复杂度: ${complexityMap[data.complexity] || data.complexity}`;
+                meta.appendChild(badge1);
+            }
+
+            if (data.estimatedTime) {
+                const badge2 = document.createElement('span');
+                badge2.className = 'meta-badge';
+                badge2.textContent = `⏱️ 预估时间: ${data.estimatedTime}`;
+                meta.appendChild(badge2);
+            }
+
+            if (data.source) {
+                const badge3 = document.createElement('span');
+                badge3.className = 'source-badge';
+                badge3.textContent = `${data.source === 'template' ? '📚 场景模板' : '🤖 AI生成'}`;
+                meta.appendChild(badge3);
+            }
+
+            header.appendChild(title);
+            header.appendChild(meta);
+
+            // 流程图
+            if (data.mermaid) {
+                const flowchartContainer = document.createElement('div');
+                flowchartContainer.className = 'flowchart-container';
+                const flowchartDiv = document.createElement('div');
+                flowchartDiv.id = 'mermaid-' + Date.now();
+                flowchartContainer.appendChild(flowchartDiv);
+                header.appendChild(flowchartContainer);
+
+                try {
+                    const { svg } = await mermaid.render(flowchartDiv.id, data.mermaid);
+                    // Mermaid 生成的 SVG 是受信任的库输出,可以安全使用
+                    flowchartDiv.innerHTML = svg;
+                } catch (error) {
+                    console.error('Mermaid渲染失败:', error);
+                    flowchartContainer.remove();
+                }
+            }
+
+            container.appendChild(header);
+
+            // 工作流步骤
+            if (data.workflow && data.workflow.length > 0) {
+                const stepsContainer = document.createElement('div');
+                stepsContainer.className = 'workflow-steps';
+
+                data.workflow.forEach(step => {
+                    stepsContainer.appendChild(createStepCard(step));
+                });
+
+                container.appendChild(stepsContainer);
+            }
+
+            grid.appendChild(container);
+            document.getElementById('resultsQuery').textContent = '工作流推荐';
             document.getElementById('resultsSection').classList.add('active');
             document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function renderResults(data) {
+            // 判断是简单推荐还是工作流
+            if (data.mode === 'workflow' && data.workflow) {
+                renderWorkflow(data);
+            } else {
+                // 简单推荐模式
+                const grid = document.getElementById('resultsGrid');
+                grid.replaceChildren();
+                if (data.recommendations) {
+                    data.recommendations.forEach(p => grid.appendChild(createProductCard(p)));
+                }
+                document.getElementById('resultsQuery').textContent = '根据「' + (data.query || data.task) + '」为你推荐';
+                document.getElementById('resultsSection').classList.add('active');
+                document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
 
         function renderCases(cases) {
@@ -802,19 +1404,42 @@ export const HTML_CONTENT = `
         async function search() {
             const query = document.getElementById('searchInput').value.trim();
             if (!query) return;
+
+            // 检查 Turnstile token
+            if (!turnstileToken) {
+                alert('请完成人机验证后再试');
+                return;
+            }
+
             document.getElementById('loading').classList.add('active');
             document.getElementById('resultsSection').classList.remove('active');
             try {
                 const response = await fetch(API_BASE + '/api/recommend', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CF-Turnstile-Token': turnstileToken
+                    },
                     body: JSON.stringify({ query })
                 });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || '请求失败');
+                }
+
                 const data = await response.json();
                 renderResults(data);
+
+                // 重置 Turnstile (每次请求后需要重新验证)
+                turnstileToken = null;
+                turnstile.reset();
             } catch (error) {
                 console.error('Error:', error);
-                alert('请求失败，请确保后端服务已启动');
+                alert(error.message || '请求失败，请稍后重试');
+                // 重置 Turnstile
+                turnstileToken = null;
+                turnstile.reset();
             } finally {
                 document.getElementById('loading').classList.remove('active');
             }
@@ -839,4 +1464,3 @@ export const HTML_CONTENT = `
     </script>
 </body>
 </html>
-`;
