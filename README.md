@@ -41,13 +41,14 @@ aimake-x/
 │   └── index.html           # 主页面（开发版本）
 ├── worker/                  # Cloudflare Worker
 │   ├── src/
-│   │   ├── index.js         # API 实现 + 前端服务
-│   │   └── frontend.js      # 前端 HTML（生产版本）
+│   │   ├── index.js         # API 实现 + 三模型推荐逻辑
+│   │   └── frontend.html    # 前端 HTML（生产版本，含 Turnstile）
 │   ├── wrangler.toml        # Cloudflare 配置
 │   └── .dev.vars            # 本地开发环境变量（不提交）
 ├── tests/                   # 测试文件
 ├── README.md                # 项目说明
 ├── DEPLOYMENT.md            # 部署说明
+├── TURNSTILE_SETUP.md       # Turnstile 配置指南
 └── CLAUDE.md                # 开发指南
 ```
 
