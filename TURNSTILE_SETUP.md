@@ -36,14 +36,30 @@ Cloudflare Turnstile 是一个免费的、用户友好的人机验证系统，�
 
 ### 3. 配置前端
 
-编辑 `frontend/index.html`，找到 Turnstile widget 部分，替换 `data-sitekey`:
+1. **引入脚本**:
+   在 `<head>` 中引入 Cloudflare 脚本：
+   ```html
+   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+   ```
 
-```html
-<div class="cf-turnstile"
-     data-sitekey="YOUR_SITE_KEY_HERE"
-     data-callback="onTurnstileSuccess"
-     data-theme="dark"></div>
-```
+2. **添加组件**:
+   找到 Turnstile widget 部分，替换 `data-sitekey`:
+   ```html
+   <div class="cf-turnstile"
+        data-sitekey="YOUR_SITE_KEY_HERE"
+        data-callback="onTurnstileSuccess"
+        data-theme="dark"></div>
+   ```
+
+3. **添加回调函数**:
+   在 `<script>` 标签中添加回调逻辑（处理验证成功后的 Token）：
+   ```javascript
+   function onTurnstileSuccess(token) {
+       console.log("Turnstile verified, token:", token);
+       // 将 token 发送到后端之前，可以将其存储或直接用于 API 请求头
+       // 后端 API 读取 header: 'CF-Turnstile-Token'
+   }
+   ```
 
 ### 4. 配置后端
 
@@ -56,9 +72,12 @@ echo "YOUR_SECRET_KEY_HERE" | npx wrangler secret put TURNSTILE_SECRET_KEY
 
 本地开发环境（可选）:
 
+在本地开发时（通常 `ENVIRONMENT` 不是 `production`），建议使用 Cloudflare 提供的**测试密钥**，以避免生产环境数据的干扰。
+
 在 `worker/.dev.vars` 文件中添加（此文件已被 gitignore）:
 
-```
+```ini
+# Cloudflare Turnstile Testing Secret Key (Always passes)
 TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 ```
 
@@ -98,7 +117,7 @@ npx wrangler deploy
 2. **验证**: 大多数情况下自动通过，少数情况需要用户点击
 3. **Token**: 验证通过后生成一次性 token
 4. **请求**: 前端将 token 通过 header `CF-Turnstile-Token` 发送给后端
-5. **校验**: 后端调用 Turnstile API 验证 token 真实性
+5. **校验**: 后端调用 Turnstile API 验证 token 真实性（注意：通常仅在 `ENVIRONMENT=production` 时开启强制验证）
 6. **重置**: 每次请求后 token 失效，需要重新验证
 
 ## 常见问题
