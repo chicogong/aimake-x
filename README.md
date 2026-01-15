@@ -30,26 +30,45 @@ curl https://x.aimake.cc/api/cases
 | 组件 | 技术选型 | 说明 |
 |------|---------|------|
 | 后端 | Cloudflare Workers + Hono | 边缘计算，全球加速 |
-| AI | SiliconFlow + DeepSeek-V2.5 | 性价比高（¥0.14/M tokens）|
-| 前端 | HTML + CSS + JavaScript | 原生实现，Dark Mode |
+| AI | SiliconFlow + 三模型架构 | Qwen 7B / GLM 4-9B / DeepSeek-V3，智能分级推荐 |
+| 前端 | Vue 3 + Vite | 模块化组件，支持 Dark Mode |
+| 搜索 | Tavily API | 联网搜索增强（可选）|
+| 安全 | Cloudflare Turnstile | 人机验证防滥用 |
 
 ## 项目结构
 
 ```
 aimake-x/
-├── frontend/                # 前端源代码
-│   └── index.html           # 主页面（开发版本）
-├── worker/                  # Cloudflare Worker
+├── frontend/                # Vue 3 前端项目
 │   ├── src/
-│   │   ├── index.js         # API 实现 + 三模型推荐逻辑
-│   │   └── frontend.html    # 前端 HTML（生产版本，含 Turnstile）
-│   ├── wrangler.toml        # Cloudflare 配置
-│   └── .dev.vars            # 本地开发环境变量（不提交）
+│   │   ├── App.vue          # 主应用组件
+│   │   ├── main.js          # 入口文件
+│   │   └── components/      # Vue 组件
+│   │       ├── ProductCard.vue      # 产品卡片
+│   │       ├── StepCard.vue         # 工作流步骤
+│   │       ├── FavoritesModal.vue   # 收藏弹窗
+│   │       └── HistoryTags.vue      # 搜索历史
+│   ├── public/              # 静态资源
+│   ├── dist/                # 构建输出（由 Vite 生成）
+│   ├── vite.config.js       # Vite 配置
+│   └── package.json         # 前端依赖
+├── worker/                  # Cloudflare Worker 后端
+│   ├── src/
+│   │   ├── index.js         # 主 API 服务
+│   │   ├── data.js          # 产品库和模型配置
+│   │   ├── scenarioTemplates.js  # 预设场景模板
+│   │   └── webSearch.js     # 联网搜索集成
+│   ├── wrangler.toml        # Cloudflare 配置（含 assets 绑定）
+│   ├── .dev.vars            # 本地环境变量（不提交）
+│   └── package.json         # 后端依赖
 ├── tests/                   # 测试文件
+│   ├── test_api.js          # API 测试
+│   └── integration_test.js  # 集成测试
 ├── README.md                # 项目说明
+├── CLAUDE.md                # 开发指南
 ├── DEPLOYMENT.md            # 部署说明
-├── TURNSTILE_SETUP.md       # Turnstile 配置指南
-└── CLAUDE.md                # 开发指南
+├── TURNSTILE_SETUP.md       # Turnstile 配置
+└── .env.example             # 环境变量模板
 ```
 
 ## 快速开始
@@ -57,17 +76,24 @@ aimake-x/
 ### 本地开发
 
 ```bash
-# 1. 安装依赖
+# 1. 安装后端依赖
 cd worker
 npm install
 
 # 2. 配置环境变量（创建 .dev.vars 文件）
 echo "SILICONFLOW_API_KEY=your_api_key" > .dev.vars
 
-# 3. 启动开发服务器
+# 3. 启动后端服务器（默认端口 8787）
 npx wrangler dev --port 8787
 
-# 4. 访问 http://localhost:8787
+# 4. 在另一个终端，安装并启动前端（默认端口 5173）
+cd ../frontend
+npm install
+npm run dev
+
+# 5. 访问前端页面
+# 浏览器打开 http://localhost:5173
+# 前端会自动代理 API 请求到后端 http://localhost:8787
 ```
 
 ### 测试 API
@@ -144,7 +170,23 @@ curl -X POST http://localhost:8787/api/recommend \
 
 ## 部署
 
-参考 [DEPLOYMENT.md](DEPLOYMENT.md) 了解如何部署到 Cloudflare Workers。
+### 快速部署
+
+```bash
+# 1. 构建前端 Vue 应用
+cd frontend
+npm run build  # 输出到 frontend/dist
+
+# 2. 部署到 Cloudflare Workers
+cd ../worker
+npx wrangler deploy  # 自动包含 frontend/dist 中的静态资源
+
+# 3. 设置生产环境密钥
+echo "your_api_key" | npx wrangler secret put SILICONFLOW_API_KEY
+echo "your_turnstile_secret" | npx wrangler secret put TURNSTILE_SECRET_KEY  # 推荐
+```
+
+详细部署说明和配置请参考 [DEPLOYMENT.md](DEPLOYMENT.md)。
 
 ### 人机验证（可选）
 

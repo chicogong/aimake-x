@@ -78,33 +78,81 @@
 </template>
 
 <script setup>
+/**
+ * StepCard - 工作流步骤卡片组件
+ *
+ * @component
+ * @description
+ * 展示工作流中的单个步骤，包含推荐工具、Prompt 模板、操作技巧等。
+ * 支持展开/折叠、一键复制 Prompt 模板。
+ *
+ * @example
+ * <StepCard :step="{
+ *   step: 1,
+ *   name: '脚本撰写',
+ *   description: '创建视频内容大纲和脚本',
+ *   tools: [{ name: 'ChatGPT', url: '...', reason: '强大的文本生成能力' }],
+ *   prompt: { template: '请帮我...', example: '示例文本' },
+ *   tips: ['注意事项1', '注意事项2']
+ * }" />
+ */
+
 import { ref } from 'vue'
 
 const props = defineProps({
+  /**
+   * 工作流步骤对象
+   * @type {{
+   *   step: number,
+   *   name: string,
+   *   description?: string,
+   *   tools?: Array<{ name: string, url: string, reason: string }>,
+   *   prompt?: { template: string, example?: string, variables?: string[] },
+   *   tips?: string[]
+   * }}
+   */
   step: {
     type: Object,
     required: true
   }
 })
 
+// 展开/折叠状态
 const isExpanded = ref(false)
+// 复制状态映射表（用于显示"已复制"提示）
 const copiedMap = ref({})
 
+/**
+ * 切换展开/折叠状态
+ */
 function toggleExpand() {
   isExpanded.value = !isExpanded.value
 }
 
+/**
+ * 在新标签页打开工具链接
+ * @param {string} url - 工具的 URL
+ */
 function openUrl(url) {
   window.open(url, '_blank')
 }
 
+/**
+ * 复制文本到剪贴板
+ * @param {string} text - 要复制的文本
+ * @param {string} key - 复制按钮的唯一标识（用于显示复制状态）
+ *
+ * @description
+ * 使用 Clipboard API 复制文本，复制成功后显示"已复制"提示 2 秒。
+ * 如果 API 不可用，提示用户手动复制。
+ */
 async function copyText(text, key) {
   try {
     await navigator.clipboard.writeText(text)
     copiedMap.value[key] = true
     setTimeout(() => {
       copiedMap.value[key] = false
-    }, 2000)
+    }, 2000) // 2 秒后恢复"复制"按钮状态
   } catch (err) {
     console.error('Copy failed:', err)
     alert('复制失败，请手动复制')

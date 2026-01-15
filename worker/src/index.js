@@ -8,7 +8,18 @@ const app = new Hono();
 
 app.use('/*', cors());
 
-// Turnstile 验证函数
+/**
+ * 验证 Cloudflare Turnstile 人机验证 token
+ *
+ * @param {string} token - 前端 Turnstile 组件生成的验证 token
+ * @param {string} secret - Turnstile Secret Key（从环境变量获取）
+ * @param {string} ip - 客户端 IP 地址
+ * @returns {Promise<boolean>} 验证是否成功
+ *
+ * @description
+ * Turnstile 是 Cloudflare 提供的免费人机验证服务，用于防止 API 滥用。
+ * Token 是一次性的，验证后即失效。
+ */
 async function verifyTurnstile(token, secret, ip) {
   try {
     const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
@@ -79,7 +90,26 @@ const WORKFLOW_SCHEMA = {
   }
 };
 
-// 调用 SiliconFlow API
+/**
+ * 调用 SiliconFlow API 进行 LLM 推理
+ *
+ * @param {Array<{role: string, content: string}>} messages - 对话消息数组
+ * @param {string} model - 模型名称（如 'Qwen/Qwen2.5-7B-Instruct'）
+ * @param {Object} env - Cloudflare Workers 环境变量对象
+ * @param {Object} options - 可选配置
+ * @param {number} [options.max_tokens=2000] - 最大生成 token 数（默认 2000）
+ * @param {number} [options.temperature=0.3] - 采样温度，控制随机性（0-1，默认 0.3）
+ * @param {boolean} [options.json_mode=false] - 是否强制 JSON 输出格式
+ * @returns {Promise<string>} AI 生成的文本内容
+ * @throws {Error} 当 API Key 未配置或 API 调用失败时抛出错误
+ *
+ * @description
+ * 封装 SiliconFlow 的 OpenAI 兼容 API 调用。
+ * max_tokens 限制：
+ * - 300: 简单分类任务（analyzeTaskComplexity）
+ * - 2000: 常规推理任务（默认值）
+ * - 4000: 复杂工作流生成
+ */
 async function callSiliconFlow(messages, model, env, options = {}) {
   const apiKey = env.SILICONFLOW_API_KEY;
   if (!apiKey) {
@@ -89,8 +119,8 @@ async function callSiliconFlow(messages, model, env, options = {}) {
   const requestBody = {
     model,
     messages,
-    max_tokens: options.max_tokens || 2000,
-    temperature: options.temperature || 0.3,
+    max_tokens: options.max_tokens || 2000, // 默认 2000 tokens，适合大多数推理任务
+    temperature: options.temperature || 0.3,  // 低温度确保输出稳定性
     ...options
   };
 
@@ -117,7 +147,27 @@ async function callSiliconFlow(messages, model, env, options = {}) {
   return data.choices[0].message.content.trim();
 }
 
-// 阶段1：任务复杂度分析
+/**
+ * 阶段 1：分析任务复杂度（三模型架构的第一阶段）
+ *
+ * @param {string} query - 用户输入的任务描述
+ * @param {Object} env - 环境变量对象
+ * @returns {Promise<Object>} 包含复杂度、任务类型、关键词等信息的对象
+ * @returns {string} return.complexity - 任务复杂度：'simple' | 'moderate' | 'complex'
+ * @returns {string} return.taskType - 任务类型（如"文档"、"视频"等）
+ * @returns {Array<string>} return.keywords - 匹配的关键词数组
+ * @returns {string} return.reasoning - AI 的分析理由
+ * @returns {boolean} return.needsWebSearch - 是否需要联网搜索
+ *
+ * @description
+ * 使用 Qwen 7B 模型进行任务复杂度分类，成本低（¥0.14/M tokens）。
+ * 根据分类结果决定后续使用哪个模型：
+ * - simple: 继续使用 Qwen 7B 直接推荐
+ * - moderate: 升级到 GLM 4-9B 生成简单工作流
+ * - complex: 升级到 DeepSeek-V3 + 联网搜索
+ *
+ * max_tokens=300 足够返回 JSON 分类结果
+ */
 async function analyzeTaskComplexity(query, env) {
   const messages = [
     {
@@ -147,7 +197,7 @@ async function analyzeTaskComplexity(query, env) {
   ];
 
   try {
-    // 使用免费的 Qwen 7B 模型
+    // 使用 Qwen 7B 模型进行快速分类（成本最低）
     const result = await callSiliconFlow(
       messages,
       'Qwen/Qwen2.5-7B-Instruct',

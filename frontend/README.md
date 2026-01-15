@@ -1,5 +1,142 @@
-# Vue 3 + Vite
+# AI导航 - 前端项目
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+基于 Vue 3 + Vite 构建的 AI 工具推荐平台前端。
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## 技术栈
+
+- **框架**: Vue 3 (Composition API + `<script setup>`)
+- **构建工具**: Vite
+- **组件库**: 原生 CSS（无第三方 UI 库）
+- **图表**: Mermaid.js（工作流可视化）
+- **状态管理**: localStorage（搜索历史和收藏）
+- **安全**: Cloudflare Turnstile（人机验证）
+
+## 项目结构
+
+```
+frontend/
+├── src/
+│   ├── App.vue              # 主应用组件
+│   ├── main.js              # 应用入口
+│   └── components/          # Vue 组件
+│       ├── ProductCard.vue      # 产品推荐卡片
+│       ├── StepCard.vue         # 工作流步骤卡片
+│       ├── FavoritesModal.vue   # 收藏夹弹窗
+│       └── HistoryTags.vue      # 搜索历史标签
+├── public/                  # 静态资源
+├── dist/                    # 构建输出（生产部署）
+├── index.html               # HTML 模板
+├── vite.config.js           # Vite 配置
+└── package.json             # 项目依赖
+```
+
+## 开发
+
+```bash
+# 安装依赖
+npm install
+
+# 启动开发服务器（默认端口 5173）
+npm run dev
+
+# 构建生产版本
+npm run build
+
+# 预览生产构建
+npm run preview
+```
+
+## 功能特性
+
+### 核心功能
+- 🔍 **智能搜索**: 输入任务描述，AI 推荐最合适的工具
+- 📋 **工作流展示**: 复杂任务生成详细的执行步骤和工具链
+- ⭐ **收藏管理**: 保存喜欢的 AI 工具到本地
+- 🕒 **搜索历史**: 自动记录最近 10 次搜索
+
+### UI 特性
+- 🌙 **Dark Mode**: 深色主题设计
+- 📱 **响应式**: 适配移动端和桌面端
+- 🎨 **流畅动画**: 丰富的交互动画效果
+- 🔐 **人机验证**: Turnstile 无感验证
+
+## API 集成
+
+前端通过检测运行环境自动选择 API 地址：
+
+```javascript
+// App.vue
+const isLocalhost = window.location.hostname === 'localhost'
+const API_BASE = isLocalhost
+  ? 'http://localhost:8787'  // 开发环境
+  : window.location.origin    // 生产环境
+```
+
+开发时需要同时启动：
+1. 后端 API 服务（`cd worker && npx wrangler dev`）
+2. 前端开发服务器（`npm run dev`）
+
+## 组件说明
+
+### App.vue
+主应用组件，包含：
+- 搜索输入和快捷标签
+- 结果展示（简单模式 vs 工作流模式）
+- 收藏和历史管理
+- Turnstile 人机验证集成
+
+### ProductCard.vue
+产品推荐卡片组件：
+- Props: `product` (产品对象), `isFavorite` (是否收藏)
+- Emits: `toggle-favorite` (切换收藏状态)
+
+### StepCard.vue
+工作流步骤卡片组件：
+- Props: `step` (步骤对象，包含工具、提示词、技巧等)
+- 支持展开/折叠
+- 一键复制提示词
+
+### FavoritesModal.vue
+收藏夹弹窗组件：
+- Props: `favorites` (收藏列表)
+- Emits: `toggle` (关闭弹窗), `close` (关闭弹窗)
+
+### HistoryTags.vue
+搜索历史标签组件：
+- Props: `history` (历史搜索数组)
+- Emits: `search` (点击历史搜索), `clear` (清空历史)
+
+## 构建和部署
+
+构建前端后，输出文件会被 Cloudflare Workers 通过 `wrangler.toml` 中的 assets 绑定自动部署：
+
+```bash
+# 1. 构建前端
+npm run build  # 输出到 dist/
+
+# 2. 部署（在 worker 目录执行）
+cd ../worker
+npx wrangler deploy  # 自动包含 ../frontend/dist
+```
+
+## 注意事项
+
+1. **Turnstile Site Key**: 在 `App.vue` 中配置 `turnstileSiteKey`
+2. **Mermaid 主题**: 在 `App.vue` 的 `onMounted` 中配置 Mermaid 主题
+3. **localStorage 限制**: 浏览器隐私模式下可能无法使用收藏和历史功能
+4. **构建输出**: 每次前端修改后必须重新构建才能部署到生产环境
+
+## 开发规范
+
+- 使用 Vue 3 Composition API 和 `<script setup>` 语法
+- 组件命名采用 PascalCase
+- Props 使用 camelCase
+- 事件使用 kebab-case
+- CSS 使用 BEM 命名规范（部分）
+
+## 相关链接
+
+- [Vue 3 文档](https://vuejs.org/)
+- [Vite 文档](https://vitejs.dev/)
+- [Mermaid 文档](https://mermaid.js.org/)
+- [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/)

@@ -165,6 +165,34 @@
 </template>
 
 <script setup>
+/**
+ * App - AI导航主应用组件
+ *
+ * @component
+ * @description
+ * AI 工具推荐平台的主应用组件，整合以下核心功能：
+ * 1. 智能搜索 - 基于任务描述推荐 AI 工具
+ * 2. 工作流展示 - 复杂任务生成详细执行步骤（支持 Mermaid 流程图）
+ * 3. 搜索历史 - 自动记录最近 10 次搜索，支持快速重新搜索
+ * 4. 收藏管理 - localStorage 持久化用户收藏的工具
+ * 5. 典型案例 - 展示预设场景和工作流模板
+ * 6. 人机验证 - Cloudflare Turnstile 集成，防止 API 滥用
+ *
+ * @architecture
+ * 采用环境自适应 API 配置：
+ * - 开发环境 (localhost): http://localhost:8787
+ * - 生产环境: https://x.aimake.cc
+ *
+ * Turnstile 人机验证：
+ * - 开发环境: 使用测试密钥（始终通过）
+ * - 生产环境: 使用真实 Site Key
+ *
+ * @example
+ * // 在 main.js 中挂载
+ * import App from './App.vue'
+ * createApp(App).mount('#app')
+ */
+
 import { ref, computed, onMounted, nextTick } from 'vue'
 import mermaid from 'mermaid'
 import ProductCard from './components/ProductCard.vue'
@@ -173,47 +201,88 @@ import HistoryTags from './components/HistoryTags.vue'
 import FavoritesModal from './components/FavoritesModal.vue'
 
 // --- State ---
+/** 用户输入的搜索查询 */
 const query = ref('')
+/** API 返回的推荐结果（简单模式或工作流模式）*/
 const results = ref(null)
+/** 搜索加载状态 */
 const isLoading = ref(false)
+/** 搜索历史记录（最多 10 条）*/
 const history = ref([])
+/** 用户收藏列表 */
 const favorites = ref([])
+/** 典型案例列表 */
 const cases = ref([])
+/** 收藏夹弹窗显示状态 */
 const isFavoriteModalOpen = ref(false)
+/** Mermaid 渲染后的 SVG 内容 */
 const mermaidSvg = ref('')
+/** 结果区域 DOM 引用（用于滚动定位）*/
 const resultsSectionRef = ref(null)
 
+/** Turnstile 人机验证 token（非响应式，由 Turnstile 回调设置）*/
 let turnstileToken = null
 
 // --- Constants & Config ---
+/**
+ * 检测是否为本地开发环境
+ * 用于自动选择 API Base 和 Turnstile 配置
+ */
 const isLocalhost = window.location.hostname === 'localhost' || window.location.protocol === 'file:'
 
+/**
+ * API 基础地址
+ * - 开发环境: http://localhost:8787（本地 Cloudflare Workers）
+ * - 生产环境: https://x.aimake.cc
+ */
 const API_BASE = isLocalhost
     ? 'http://localhost:8787'
     : 'https://x.aimake.cc'
 
+/**
+ * Cloudflare Turnstile Site Key
+ * - 开发环境: '1x00000000000000000000AA'（测试密钥，始终通过验证）
+ * - 生产环境: '0x4AAAAAACMJv6G1wSzglPJJ'（真实密钥）
+ */
 const turnstileSiteKey = isLocalhost
-    ? '1x00000000000000000000AA' // Cloudflare Turnstile Testing Key (Always Pass)
+    ? '1x00000000000000000000AA'
     : '0x4AAAAAACMJv6G1wSzglPJJ'
 
+/** 典型案例图标映射 */
 const caseIcons = { 'gov-doc': '📄', 'invoice': '🧾', 'video': '🎬', 'meeting': '🎙️', 'contract': '📋' }
+/** 任务复杂度中文显示映射 */
 const complexityMap = { 'simple': '简单', 'moderate': '中等', 'complex': '复杂' }
 
 // --- Computed ---
+/**
+ * 结果区域标题
+ * @returns {string} 根据结果模式返回不同标题
+ */
 const resultsTitle = computed(() => {
   if (!results.value) return ''
-  return results.value.mode === 'workflow' 
-    ? '工作流推荐' 
+  return results.value.mode === 'workflow'
+    ? '工作流推荐'
     : `根据「${results.value.query || results.value.task}」为你推荐`
 })
 
 // --- Methods ---
 
 // History
+/**
+ * 从 localStorage 加载搜索历史
+ * @description 在组件挂载时调用，恢复用户的历史搜索记录
+ */
 function loadHistory() {
   history.value = JSON.parse(localStorage.getItem('searchHistory') || '[]')
 }
 
+/**
+ * 保存搜索记录到历史
+ * @param {string} q - 搜索查询文本
+ * @description
+ * 将新搜索添加到历史记录顶部，如果已存在则移到顶部。
+ * 历史记录最多保留 10 条，超出部分自动删除。
+ */
 function saveHistory(q) {
   let h = history.value.filter(item => item !== q)
   h.unshift(q)
@@ -222,20 +291,40 @@ function saveHistory(q) {
   localStorage.setItem('searchHistory', JSON.stringify(h))
 }
 
+/**
+ * 清空所有搜索历史
+ * @description 同时清除内存和 localStorage 中的历史记录
+ */
 function clearHistory() {
   history.value = []
   localStorage.removeItem('searchHistory')
 }
 
 // Favorites
+/**
+ * 从 localStorage 加载用户收藏
+ * @description 在组件挂载时调用，恢复用户收藏的工具列表
+ */
 function loadFavorites() {
   favorites.value = JSON.parse(localStorage.getItem('userFavorites') || '[]')
 }
 
+/**
+ * 检查产品是否已收藏
+ * @param {string} id - 产品唯一标识（通常为 URL）
+ * @returns {boolean} 是否已收藏
+ */
 function isFavorite(id) {
   return favorites.value.some(f => f.id === id)
 }
 
+/**
+ * 切换产品收藏状态
+ * @param {Object} product - 产品对象，包含 name, url, desc
+ * @description
+ * 如果产品已收藏则取消收藏，否则添加到收藏列表。
+ * 收藏数据持久化到 localStorage。
+ */
 function toggleFavorite(product) {
   const index = favorites.value.findIndex(f => f.id === product.url)
   if (index >= 0) {
@@ -252,6 +341,22 @@ function toggleFavorite(product) {
 }
 
 // Search
+/**
+ * 执行智能搜索
+ * @async
+ * @description
+ * 核心搜索功能，执行以下步骤：
+ * 1. 验证搜索查询非空
+ * 2. 保存到搜索历史
+ * 3. 携带 Turnstile token 调用后端 API
+ * 4. 处理两种结果模式：
+ *    - 简单模式：直接显示推荐工具列表
+ *    - 工作流模式：渲染 Mermaid 流程图并显示步骤
+ * 5. 滚动到结果区域
+ * 6. 重置 Turnstile（为下次搜索做准备）
+ *
+ * @throws {Error} API 请求失败或 Turnstile 验证失败
+ */
 async function search() {
   if (!query.value.trim()) return
   saveHistory(query.value.trim())
@@ -311,12 +416,25 @@ async function search() {
   }
 }
 
+/**
+ * 快速搜索（点击标签或历史记录）
+ * @param {string} q - 搜索查询文本
+ * @description 设置查询内容并立即触发搜索
+ */
 function quickSearch(q) {
   query.value = q
   search()
 }
 
 // Mermaid
+/**
+ * 渲染 Mermaid 流程图
+ * @async
+ * @param {string} graphDefinition - Mermaid 图表定义语法
+ * @description
+ * 使用 Mermaid.js 将图表定义渲染为 SVG。
+ * 渲染失败时静默处理，不影响页面其他功能。
+ */
 async function renderMermaid(graphDefinition) {
    try {
      const { svg } = await mermaid.render('mermaid-graph-' + Date.now(), graphDefinition)
@@ -327,6 +445,13 @@ async function renderMermaid(graphDefinition) {
 }
 
 // Data Loading
+/**
+ * 加载典型案例列表
+ * @async
+ * @description
+ * 从后端 API 获取预设的典型案例（如政府文档处理、发票识别等）。
+ * 案例数据在组件挂载时自动加载。
+ */
 async function loadCases() {
   try {
     const response = await fetch(`${API_BASE}/api/cases`)
@@ -339,6 +464,15 @@ async function loadCases() {
 
 // --- Lifecycle ---
 
+/**
+ * 组件挂载生命周期
+ * @description
+ * 执行初始化操作：
+ * 1. 加载搜索历史和收藏列表
+ * 2. 加载典型案例
+ * 3. 初始化 Mermaid 配置（深色主题 + 自定义配色）
+ * 4. 注册 Turnstile 成功回调（设置 turnstileToken）
+ */
 onMounted(() => {
   loadHistory()
   loadFavorites()

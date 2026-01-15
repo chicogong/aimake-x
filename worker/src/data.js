@@ -1,4 +1,32 @@
-// 产品库（核心推荐）
+/**
+ * 产品库和模型配置
+ *
+ * @file worker/src/data.js
+ * @description 定义 AI 工具产品库和三模型架构的模型配置
+ */
+
+/**
+ * @typedef {Object} Product
+ * @property {string} name - 产品名称
+ * @property {string} url - 产品官网链接
+ * @property {string} desc - 产品功能描述
+ */
+
+/**
+ * 产品库：按任务类型分类的 AI 工具推荐数据库
+ *
+ * @type {Object.<string, Product[]>}
+ *
+ * @description
+ * 核心推荐数据源，包含 50+ 款 AI 工具。
+ * 关键词（key）会被用于：
+ * 1. AI 系统提示词中的候选关键词
+ * 2. 降级方案的关键词匹配
+ *
+ * 支持的任务类型：
+ * - 文档、表格、视频、音频、会议
+ * - 合同、法律、代码、写作、绘画
+ */
 export const PRODUCTS = {
   '文档': [
     { name: 'Kimi', url: 'https://kimi.moonshot.cn', desc: '长文本处理、文档分析，支持20万字' },
@@ -47,11 +75,32 @@ export const PRODUCTS = {
   ]
 };
 
-// 模型配置
+/**
+ * @typedef {Object} ModelConfig
+ * @property {number} cost - 模型成本（人民币/百万 tokens）
+ * @property {string} speed - 推理速度：'fast' | 'medium' | 'slow'
+ * @property {string} capability - 能力等级：'simple' | 'moderate' | 'complex'
+ */
+
+/**
+ * 三模型架构配置：根据任务复杂度智能选择模型
+ *
+ * @type {Object.<string, ModelConfig>}
+ *
+ * @description
+ * 分级推荐策略，平衡成本和质量：
+ * - Qwen 7B (¥0.14/M tokens): 简单任务、快速分类
+ * - GLM 4-9B (¥0.7/M tokens): 中等复杂度、简单工作流
+ * - DeepSeek-V3 (¥2.0/M tokens): 复杂工作流 + 联网搜索
+ *
+ * 预估分布：80% simple, 15% moderate, 5% complex
+ * 平均成本：约 ¥0.3/M tokens
+ */
 export const MODELS = {
-  // 免费模型（优先使用）
-  'Qwen/Qwen2.5-7B-Instruct': { cost: 0, speed: 'fast', capability: 'simple' },
-  'THUDM/glm-4-9b-chat': { cost: 0, speed: 'fast', capability: 'moderate' },
-  // 付费模型（性能更好）
-  'deepseek-ai/DeepSeek-V3': { cost: 1.33, speed: 'medium', capability: 'complex' }
+  // 轻量模型（用于简单任务和分类）
+  'Qwen/Qwen2.5-7B-Instruct': { cost: 0.14, speed: 'fast', capability: 'simple' },
+  // 中等模型（用于中等复杂度任务）
+  'THUDM/glm-4-9b-chat': { cost: 0.7, speed: 'fast', capability: 'moderate' },
+  // 强力模型（用于复杂工作流生成）
+  'deepseek-ai/DeepSeek-V3': { cost: 2.0, speed: 'medium', capability: 'complex' }
 };
