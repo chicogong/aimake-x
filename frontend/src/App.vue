@@ -50,13 +50,13 @@
           <span class="quick-tag" @click="quickSearch('AI绘画生成图片')">AI绘画</span>
         </div>
 
-        <HistoryTags 
-          :history="history" 
-          @search="quickSearch" 
+        <HistoryTags
+          :history="history"
+          @search="quickSearch"
           @clear="clearHistory"
         />
 
-        <div class="turnstile-container">
+        <div v-if="!isTurnstileVerified" class="turnstile-container">
           <div class="cf-turnstile"
                :data-sitekey="turnstileSiteKey"
                data-callback="onTurnstileSuccess"
@@ -219,6 +219,8 @@ const isFavoriteModalOpen = ref(false)
 const mermaidSvg = ref('')
 /** 结果区域 DOM 引用（用于滚动定位）*/
 const resultsSectionRef = ref(null)
+/** Turnstile 验证是否已通过 */
+const isTurnstileVerified = ref(false)
 
 /** Turnstile 人机验证 token（非响应式，由 Turnstile 回调设置）*/
 let turnstileToken = null
@@ -492,6 +494,7 @@ onMounted(() => {
   // Expose Turnstile callback
   window.onTurnstileSuccess = (token) => {
     turnstileToken = token
+    isTurnstileVerified.value = true
     console.log('Turnstile verified')
   }
 })
