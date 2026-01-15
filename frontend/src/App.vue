@@ -408,11 +408,8 @@ async function search() {
     alert(error.message || '请求失败，请稍后重试')
   } finally {
     isLoading.value = false
-    // Perform reset in a way compatible with Turnstile
-    if (window.turnstile) {
-        window.turnstile.reset()
-        turnstileToken = null
-    }
+    // 保持 Turnstile token 有效，避免每次搜索都需要重新验证
+    // token 默认有效期 5 分钟，足够多次搜索使用
   }
 }
 
