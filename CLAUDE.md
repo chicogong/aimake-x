@@ -11,27 +11,33 @@ AI导航是一个基于 Cloudflare Workers 的 AI 工具推荐平台,采用三�
 - AI: SiliconFlow 平台 + 三模型架构 (Qwen 7B / GLM 4-9B / DeepSeek-V3)
 - 搜索: Tavily API (联网搜索增强)
 - 安全: Cloudflare Turnstile (人机验证)
-- 前端: 原生 HTML/CSS/JavaScript (无构建工具)
+- 前端: Vue 3 + Vite (模块化组件架构)
 
 **核心文件:**
-- `worker/src/index.js` - 主 API 服务,包含三模型推荐逻辑和产品库
-- `worker/src/frontend.html` - 前端生产版本 (包含 Turnstile)
-- `frontend/index.html` - 前端开发版本 (与 frontend.html 同步)
-- `worker/wrangler.toml` - Cloudflare Workers 配置
+- `worker/src/index.js` - 主 API 服务和三模型推荐逻辑
+- `worker/src/data.js` - 产品库和模型配置
+- `worker/src/scenarioTemplates.js` - 预设场景模板
+- `worker/src/webSearch.js` - 联网搜索集成
+- `frontend/src/App.vue` - 主应用组件
+- `frontend/src/components/` - Vue 组件 (ProductCard, StepCard, FavoritesModal, HistoryTags)
+- `worker/wrangler.toml` - Cloudflare Workers 配置 (包含 assets 绑定)
 
 ## 常用命令
 
 ### 开发环境
 
 ```bash
-# 启动后端 API 服务 (默认端口 8787)
+# 1. 启动后端 API 服务 (默认端口 8787)
 cd worker
 npm install
 npx wrangler dev --port 8787
 
-# 启动前端服务 (端口 3000)
+# 2. 在另一个终端启动前端 Vue 开发服务器 (默认端口 5173)
 cd frontend
-python3 -m http.server 3000
+npm install
+npm run dev
+
+# 注意: 前端会自动代理 API 请求到 http://localhost:8787
 ```
 
 ### 测试
@@ -55,16 +61,20 @@ curl http://localhost:8787/api/cases
 ### 部署
 
 ```bash
-# 设置生产环境密钥
-cd worker
+# 1. 构建前端 Vue 应用
+cd frontend
+npm run build  # 输出到 frontend/dist
+
+# 2. 设置生产环境密钥
+cd ../worker
 echo "your_api_key" | npx wrangler secret put SILICONFLOW_API_KEY
 echo "your_tavily_key" | npx wrangler secret put TAVILY_API_KEY  # 可选,用于联网搜索
 echo "your_turnstile_secret" | npx wrangler secret put TURNSTILE_SECRET_KEY  # 推荐,防止滥用
 
-# 部署到 Cloudflare Workers
+# 3. 部署到 Cloudflare Workers (自动包含 frontend/dist 中的静态资源)
 npx wrangler deploy
 
-# 查看实时日志
+# 4. 查看实时日志
 npx wrangler tail
 ```
 
@@ -104,9 +114,28 @@ TURNSTILE_SECRET_KEY=0x4...      # 人机验证 (强烈推荐)
 ENVIRONMENT=production           # 环境标识
 ```
 
+### 前端架构 (Vue 3 + Vite)
+
+前端采用 Vue 3 Composition API 和组件化设计:
+
+**主要组件:**
+- `App.vue` - 主应用,包含搜索、结果展示、收藏管理
+- `ProductCard.vue` - 产品推荐卡片
+- `StepCard.vue` - 工作流步骤卡片
+- `FavoritesModal.vue` - 收藏夹弹窗
+- `HistoryTags.vue` - 搜索历史标签
+
+**状态管理:**
+- 使用 `localStorage` 存储搜索历史和收藏
+- Turnstile token 管理通过全局回调函数
+
+**构建配置:**
+- `vite.config.js` - Vite 配置
+- 构建输出: `frontend/dist` → 通过 `wrangler.toml` 的 `[assets]` 绑定到 Workers
+
 ### 产品库扩展
 
-在 `worker/src/index.js` 中修改 `PRODUCTS` 对象:
+在 `worker/src/data.js` 中修改 `PRODUCTS` 对象:
 ```javascript
 const PRODUCTS = {
   '关键词': [
@@ -141,14 +170,23 @@ const PRODUCTS = {
 
 ### 前后端配置
 
-1. **前端开发**: 修改 `frontend/index.html`
-2. **同步到生产**: 将修改复制到 `worker/src/frontend.html`
-3. **API 地址**: 配置在 HTML 的 JavaScript 部分
-   ```javascript
-   const API_BASE = window.location.origin;  // 生产环境自动获取
-   // const API_BASE = 'http://localhost:8787';  // 本地开发可切换
-   ```
-4. **Turnstile Site Key**: 在 `worker/src/frontend.html` 的 `data-sitekey` 属性中配置
+1. **前端开发**:
+   - 修改 Vue 组件: `frontend/src/App.vue` 和 `frontend/src/components/*.vue`
+   - Vite 自动热更新,无需手动刷新
+
+2. **前端构建**:
+   - 运行 `npm run build` 生成 `frontend/dist`
+   - `wrangler.toml` 中的 `[assets]` 配置自动将 `dist` 部署到 Workers
+   - **重要**: 每次前端修改后必须重新构建才能部署
+
+3. **API 配置**:
+   - 开发环境: 检测到 `localhost` 时自动使用 `http://localhost:8787`
+   - 生产环境: 通过 `window.location.origin` 自动获取
+   - 配置位置: `App.vue` 中的 `API_BASE` 常量
+
+4. **Turnstile 配置**:
+   - Site Key: 在 `App.vue` 的 `turnstileSiteKey` 变量中配置
+   - Secret Key: 使用 `wrangler secret put TURNSTILE_SECRET_KEY` 设置
 
 ### 成本优化
 
