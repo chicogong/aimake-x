@@ -1,172 +1,41 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI导航 - 任何事情先看看 AI 能不能做</title>
-    
+  <head>
+    <meta charset="UTF-8" />
     <!-- SEO Meta Tags -->
     <meta name="description" content="任何事情先看看AI能不能做。AI导航帮你找到最适合的AI工具，支持视频剪辑、代码生成、文档处理、会议记录等50+款AI产品智能推荐。">
     <meta name="keywords" content="AI工具,人工智能,AI推荐,视频剪辑,会议记录,合同审查,代码生成,AI绘画,剪映,Kimi,通义听悟,ChatGPT">
     <meta name="author" content="AI导航">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://ai-nav.example.com/">
-    
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://ai-nav.example.com/">
     <meta property="og:title" content="AI导航 - 任何事情先看看 AI 能不能做">
     <meta property="og:description" content="任何事情先看看AI能不能做。帮你找到最适合的AI工具，支持视频剪辑、代码生成、文档处理等50+款AI产品智能推荐。">
-    <meta property="og:image" content="https://ai-nav.example.com/og-image.png">
     <meta property="og:locale" content="zh_CN">
     <meta property="og:site_name" content="AI导航">
-    
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://ai-nav.example.com/">
     <meta name="twitter:title" content="AI导航 - 任何事情先看看 AI 能不能做">
     <meta name="twitter:description" content="任何事情先看看AI能不能做。帮你找到最适合的AI工具，支持视频剪辑、代码生成、文档处理等50+款AI产品智能推荐。">
-    <meta name="twitter:image" content="https://ai-nav.example.com/og-image.png">
-    
-    <!-- 结构化数据 (JSON-LD) -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "AI导航",
-        "url": "https://ai-nav.example.com/",
-        "description": "任何事情先看看AI能不能做，帮你找到最适合的AI工具，支持50+款AI产品智能推荐",
-        "applicationCategory": "UtilitiesApplication",
-        "operatingSystem": "Web",
-        "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "CNY"
-        },
-        "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.8",
-            "ratingCount": "1000"
-        },
-        "featureList": [
-            "视频剪辑工具推荐",
-            "会议记录工具推荐", 
-            "合同审查工具推荐",
-            "代码生成工具推荐",
-            "AI绘画工具推荐",
-            "Excel处理工具推荐"
-        ]
-    }
-    </script>
     
     <!-- 网站图标 -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
     <meta name="theme-color" content="#0066FF">
-    
-    <!-- Preconnect for fonts -->
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Mermaid.js for flowcharts -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-
     <!-- Cloudflare Turnstile -->
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="bg-decoration"></div>
-    <div class="grid-bg"></div>
-
-    <nav class="navbar">
-        <div class="navbar-content">
-            <div class="logo">AI导航</div>
-            <ul class="nav-links">
-                <li><a href="#cases">典型案例</a></li>
-                <li><a href="#">API 文档</a></li>
-                <li><a href="#about">关于我们</a></li>
-            </ul>
-        </div>
-    </nav>
-
-    <section class="hero">
-        <div class="container">
-            <div class="hero-badge">
-                <span>已收录 50+ 款 AI 工具</span>
-            </div>
-            <h1>任何事情先看看<br><span>AI 能不能做</span></h1>
-            <p class="hero-subtitle">
-                告诉我你想做什么，我帮你找到最适合的 AI 工具
-            </p>
-
-            <div class="search-container">
-                <div class="search-box">
-                    <input type="text" class="search-input" id="searchInput"
-                        placeholder="描述你想完成的任务，例如：剪辑一个视频并添加字幕">
-                    <button class="search-btn" id="searchBtn">
-                        <span>智能推荐</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="quick-tags">
-                    <span class="quick-tag" data-query="视频剪辑加字幕">视频剪辑</span>
-                    <span class="quick-tag" data-query="会议录音转文字">会议记录</span>
-                    <span class="quick-tag" data-query="分析合同文档">合同审查</span>
-                    <span class="quick-tag" data-query="写代码">代码生成</span>
-                    <span class="quick-tag" data-query="处理Excel表格">Excel处理</span>
-                    <span class="quick-tag" data-query="AI绘画生成图片">AI绘画</span>
-                </div>
-                <!-- Turnstile Widget -->
-                <div class="turnstile-container">
-                    <div class="cf-turnstile"
-                         data-sitekey="0x4AAAAAACMJv6G1wSzglPJJ"
-                         data-callback="onTurnstileSuccess"
-                         data-theme="dark"></div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="loading" id="loading">
-        <div class="container">
-            <div class="spinner"></div>
-            <p style="color: var(--text-secondary);">正在分析你的需求...</p>
-        </div>
-    </div>
-
-    <section class="results-section" id="resultsSection">
-        <div class="container">
-            <div class="results-header">
-                <h2>为你推荐</h2>
-                <p id="resultsQuery"></p>
-            </div>
-            <div class="results-grid" id="resultsGrid"></div>
-        </div>
-    </section>
-
-    <section class="cases-section" id="cases">
-        <div class="container">
-            <div class="section-header">
-                <h2>典型应用场景</h2>
-                <p>看看其他用户是怎么使用 AI 工具提效的</p>
-            </div>
-            <div class="cases-grid" id="casesGrid"></div>
-        </div>
-    </section>
-
-    <footer class="footer" id="about">
-        <div class="container">
-            <p class="footer-text">
-                AI导航 - 任何事情先看看 AI 能不能做<br>
-                <a href="#">GitHub</a> · <a href="#">API 文档</a> · <a href="#">反馈建议</a>
-            </p>
-        </div>
-    </footer>
-
-    <script src="script.js"></script>
-</body>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI导航 - 任何事情先看看 AI 能不能做</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>

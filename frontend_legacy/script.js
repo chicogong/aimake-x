@@ -29,7 +29,18 @@ function onTurnstileSuccess(token) {
 function createProductCard(product) {
     const card = document.createElement('div');
     card.className = 'product-card';
-    card.onclick = () => window.open(product.url, '_blank');
+    
+    // 收藏按钮
+    const heartBtn = document.createElement('button');
+    heartBtn.className = `favorite-btn ${isFavorite(product.url) ? 'active' : ''}`;
+    heartBtn.innerHTML = '❤';
+    heartBtn.title = '收藏';
+    heartBtn.onclick = (e) => {
+        e.stopPropagation();
+        toggleFavorite({ id: product.url, type: 'tool', data: product });
+        heartBtn.classList.toggle('active');
+    };
+    card.appendChild(heartBtn);
 
     const icon = document.createElement('div');
     icon.className = 'product-icon';
@@ -435,6 +446,7 @@ function renderCases(cases) {
 async function search() {
     const query = document.getElementById('searchInput').value.trim();
     if (!query) return;
+    saveHistory(query);
 
     // 检查 Turnstile token
     if (!turnstileToken) {
@@ -492,3 +504,132 @@ document.querySelectorAll('.quick-tag').forEach(tag => {
     tag.addEventListener('click', () => { document.getElementById('searchInput').value = tag.dataset.query; search(); });
 });
 loadCases();
+
+/* --- History Logic --- */
+function loadHistory() {
+    const history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+    const container = document.getElementById('searchHistory');
+    const tagsContainer = document.getElementById('historyTags');
+
+    if (!container || !tagsContainer) return;
+
+    if (history.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'flex';
+    tagsContainer.innerHTML = '';
+    history.forEach(query => {
+        const tag = document.createElement('span');
+        tag.className = 'history-tag';
+        tag.textContent = query;
+        tag.onclick = () => {
+            document.getElementById('searchInput').value = query;
+            search();
+        };
+        tagsContainer.appendChild(tag);
+    });
+}
+
+function saveHistory(query) {
+    let history = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+    history = history.filter(h => h !== query); // 去重
+    history.unshift(query); // 加到最前
+    if (history.length > 10) history = history.slice(0, 10); // 限制10条
+
+    localStorage.setItem('searchHistory', JSON.stringify(history));
+    loadHistory();
+}
+
+function clearHistory() {
+    localStorage.removeItem('searchHistory');
+    loadHistory();
+}
+
+const clearHistoryBtn = document.getElementById('clearHistory');
+if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearHistory);
+
+/* --- Favorites Logic --- */
+function getFavorites() {
+    return JSON.parse(localStorage.getItem('userFavorites') || '[]');
+}
+
+function isFavorite(id) {
+    const favorites = getFavorites();
+    return favorites.some(f => f.id === id);
+}
+
+function toggleFavorite(item) {
+    let favorites = getFavorites();
+    const index = favorites.findIndex(f => f.id === item.id);
+
+    if (index >= 0) {
+        favorites.splice(index, 1);
+    } else {
+        favorites.push({
+            id: item.id,
+            type: item.type,
+            data: item.data,
+            timestamp: Date.now()
+        });
+    }
+    localStorage.setItem('userFavorites', JSON.stringify(favorites));
+    
+    // 如果模态框已打开，刷新它
+    if (document.getElementById('favoritesModal').classList.contains('active')) {
+        renderFavoritesModal();
+    }
+}
+
+function renderFavoritesModal() {
+    const list = document.getElementById('favoritesList');
+    const favorites = getFavorites();
+
+    if (favorites.length === 0) {
+        list.innerHTML = '<p class="empty-favorites">暂无收藏内容</p>';
+        return;
+    }
+
+    list.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'results-grid';
+    
+    favorites.forEach(fav => {
+        if (fav.type === 'tool') {
+             const card = createProductCard(fav.data);
+             // 在模态框里点击不需要跳转，或者保持跳转？保持跳转比较好
+             grid.appendChild(card);
+        }
+    });
+    list.appendChild(grid);
+}
+
+// Favorites Event Listeners
+const openFavoritesBtn = document.getElementById('openFavoritesBtn');
+if (openFavoritesBtn) {
+    openFavoritesBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        renderFavoritesModal();
+        document.getElementById('favoritesModal').classList.add('active');
+    });
+}
+
+const closeFavoritesModalBtn = document.getElementById('closeFavoritesModal');
+if (closeFavoritesModalBtn) {
+    closeFavoritesModalBtn.addEventListener('click', () => {
+        document.getElementById('favoritesModal').classList.remove('active');
+    });
+}
+
+const favoritesModal = document.getElementById('favoritesModal');
+if (favoritesModal) {
+    favoritesModal.addEventListener('click', (e) => {
+        if (e.target === favoritesModal) {
+            favoritesModal.classList.remove('active');
+        }
+    });
+}
+
+// Initialize
+loadHistory();
