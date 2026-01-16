@@ -33,12 +33,8 @@
             placeholder="描述你想完成的任务，例如：剪辑一个视频并添加字幕" 
             @keypress.enter="search"
           >
-          <button
-            class="search-btn"
-            :disabled="!isTurnstileVerified"
-            @click="search"
-          >
-            <span>{{ isTurnstileVerified ? '智能推荐' : '请先完成验证' }}</span>
+          <button class="search-btn" @click="search">
+            <span>智能推荐</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
@@ -59,13 +55,6 @@
           @search="quickSearch"
           @clear="clearHistory"
         />
-
-        <div class="turnstile-container">
-          <div class="cf-turnstile"
-               :data-sitekey="turnstileSiteKey"
-               data-callback="onTurnstileSuccess"
-               data-theme="dark"></div>
-        </div>
       </div>
     </div>
   </section>
@@ -223,11 +212,6 @@ const isFavoriteModalOpen = ref(false)
 const mermaidSvg = ref('')
 /** 结果区域 DOM 引用（用于滚动定位）*/
 const resultsSectionRef = ref(null)
-/** Turnstile 验证是否已通过 */
-const isTurnstileVerified = ref(false)
-
-/** Turnstile 人机验证 token（非响应式，由 Turnstile 回调设置）*/
-let turnstileToken = null
 
 // --- Constants & Config ---
 /**
@@ -244,15 +228,6 @@ const isLocalhost = window.location.hostname === 'localhost' || window.location.
 const API_BASE = isLocalhost
     ? 'http://localhost:8787'
     : 'https://x.aimake.cc'
-
-/**
- * Cloudflare Turnstile Site Key
- * - 开发环境: '1x00000000000000000000AA'（测试密钥，始终通过验证）
- * - 生产环境: '0x4AAAAAACMJv6G1wSzglPJJ'（真实密钥）
- */
-const turnstileSiteKey = isLocalhost
-    ? '1x00000000000000000000AA'
-    : '0x4AAAAAACMJv6G1wSzglPJJ'
 
 /** 典型案例图标映射 */
 const caseIcons = { 'gov-doc': '📄', 'invoice': '🧾', 'video': '🎬', 'meeting': '🎙️', 'contract': '📋' }
@@ -366,11 +341,6 @@ function toggleFavorite(product) {
 async function search() {
   if (!query.value.trim()) return
 
-  if (!isTurnstileVerified.value) {
-    alert('请先完成人机验证')
-    return
-  }
-
   saveHistory(query.value.trim())
 
   isLoading.value = true
@@ -381,8 +351,7 @@ async function search() {
     const response = await fetch(`${API_BASE}/api/recommend`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'CF-Turnstile-Token': turnstileToken
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ query: query.value.trim() })
     })
@@ -414,21 +383,15 @@ async function search() {
     alert(error.message || '请求失败，请稍后重试')
   } finally {
     isLoading.value = false
-    // 保持 Turnstile token 有效，避免每次搜索都需要重新验证
-    // token 默认有效期 5 分钟，足够多次搜索使用
   }
 }
 
 /**
  * 快速搜索（点击标签或历史记录）
  * @param {string} q - 搜索查询文本
- * @description 设置查询内容并立即触发搜索（需要先完成验证）
+ * @description 设置查询内容并立即触发搜索
  */
 function quickSearch(q) {
-  if (!isTurnstileVerified.value) {
-    alert('请先完成人机验证')
-    return
-  }
   query.value = q
   search()
 }
@@ -498,12 +461,5 @@ onMounted(() => {
         tertiaryColor: '#111827'
     }
   })
-
-  // Expose Turnstile callback
-  window.onTurnstileSuccess = (token) => {
-    turnstileToken = token
-    isTurnstileVerified.value = true
-    console.log('Turnstile verified')
-  }
 })
 </script>
