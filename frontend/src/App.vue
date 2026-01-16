@@ -33,8 +33,12 @@
             placeholder="描述你想完成的任务，例如：剪辑一个视频并添加字幕" 
             @keypress.enter="search"
           >
-          <button class="search-btn" @click="search">
-            <span>智能推荐</span>
+          <button
+            class="search-btn"
+            :disabled="!isTurnstileVerified"
+            @click="search"
+          >
+            <span>{{ isTurnstileVerified ? '智能推荐' : '请先完成验证' }}</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
@@ -56,7 +60,7 @@
           @clear="clearHistory"
         />
 
-        <div v-if="!isTurnstileVerified" class="turnstile-container">
+        <div class="turnstile-container">
           <div class="cf-turnstile"
                :data-sitekey="turnstileSiteKey"
                data-callback="onTurnstileSuccess"
@@ -361,13 +365,13 @@ function toggleFavorite(product) {
  */
 async function search() {
   if (!query.value.trim()) return
-  saveHistory(query.value.trim())
 
-  if (!turnstileToken) {
-    // 简单的检查，实际上可能不需要严格阻止，取决于后端
-    // alert('请完成人机验证后再试')
-    // return
+  if (!isTurnstileVerified.value) {
+    alert('请先完成人机验证')
+    return
   }
+
+  saveHistory(query.value.trim())
 
   isLoading.value = true
   results.value = null
@@ -418,9 +422,13 @@ async function search() {
 /**
  * 快速搜索（点击标签或历史记录）
  * @param {string} q - 搜索查询文本
- * @description 设置查询内容并立即触发搜索
+ * @description 设置查询内容并立即触发搜索（需要先完成验证）
  */
 function quickSearch(q) {
+  if (!isTurnstileVerified.value) {
+    alert('请先完成人机验证')
+    return
+  }
   query.value = q
   search()
 }
