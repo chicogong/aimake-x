@@ -55,6 +55,13 @@
           @search="quickSearch"
           @clear="clearHistory"
         />
+
+        <div class="turnstile-container">
+          <div class="cf-turnstile"
+               :data-sitekey="turnstileSiteKey"
+               data-callback="onTurnstileSuccess"
+               data-theme="dark"></div>
+        </div>
       </div>
     </div>
   </section>
